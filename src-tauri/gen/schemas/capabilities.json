@@ -1,0 +1,1 @@
+{"main-capability":{"identifier":"main-capability","description":"Main capability for PDF to PNG converter","local":true,"windows":["main"],"permissions":["core:default","dialog:default","fs:default","fs:write-all"]}}

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to PNG Converter</title>
+    <script src="js/pdf.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 2.5rem;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+        #langSwitch {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        #langBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2) !important;
+            color: white !important;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+        #langBtn:hover { transform: scale(1.05); }
+        .drop-zone {
+            border: 3px dashed #667eea;
+            padding: 3rem;
+            margin: 2rem 0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%);
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .drop-zone:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e8ff 100%);
+        }
+        .drop-zone p { color: #555; margin: 0.5rem 0; }
+        input[type="file"] {
+            margin-top: 1rem;
+            padding: 0.5rem;
+        }
+        .info { margin: 1.5rem 0; }
+        #fileName, #outputPath {
+            color: #444;
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+        #fileName { color: #667eea; font-weight: 600; }
+        #outputPath { color: #764ba2; word-break: break-all; }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2) !important;
+            color: white !important;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        button:disabled {
+            background: #ccc !important;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #progress {
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 1rem 0;
+            min-height: 1.5rem;
+        }
+        #status {
+            color: #888;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="title">PDF to PNG Converter</h1>
+        <div id="langSwitch">
+            <button id="langBtn">EN / 中文</button>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            <p id="dropText">Drag & drop PDF file here</p>
+            <p id="orText">or</p>
+            <input type="file" id="fileInput" accept=".pdf">
+        </div>
+
+        <div class="info">
+            <div id="fileName"></div>
+            <div id="outputPath"></div>
+        </div>
+
+        <div class="btn-group">
+            <button id="selectOutputBtn">Select Output Folder</button>
+            <button id="convertBtn" disabled>Convert All Pages to PNG</button>
+        </div>
+
+        <div class="progress-bar" id="progressBar" style="display:none;">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div id="progress"></div>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const i18n = {
+            en: {
+                title: 'PDF to PNG Converter',
+                dropText: 'Drag & drop PDF file here',
+                orText: 'or',
+                selectOutput: 'Select Output Folder',
+                convert: 'Convert All Pages to PNG',
+                loadingPdf: 'Loading PDF...',
+                selected: 'Selected',
+                pages: 'pages',
+                output: 'Output',
+                converting: 'Converting...',
+                processing: 'Processing page',
+                saved: 'saved',
+                complete: 'Complete!',
+                pngSavedTo: 'PNG files saved to',
+                selectFolderFirst: 'Please select output folder first',
+                dropPdfOnly: 'Please drop a PDF file',
+                error: 'Error'
+            },
+            zh: {
+                title: 'PDF 转 PNG 转换器',
+                dropText: '拖拽 PDF 文件到此处',
+                orText: '或',
+                selectOutput: '选择输出文件夹',
+                convert: '转换所有页面为 PNG',
+                loadingPdf: '正在加载 PDF...',
+                selected: '已选择',
+                pages: '页',
+                output: '输出',
+                converting: '转换中...',
+                processing: '正在处理第',
+                saved: '已保存',
+                complete: '完成！',
+                pngSavedTo: '个 PNG 文件已保存到',
+                selectFolderFirst: '请先选择输出文件夹',
+                dropPdfOnly: '请拖入 PDF 文件',
+                error: '错误'
+            }
+        };
+
+        let currentLang = navigator.language.startsWith('zh') ? 'zh' : 'en';
+
+        function updateUI() {
+            const t = i18n[currentLang];
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('dropText').textContent = t.dropText;
+            document.getElementById('orText').textContent = t.orText;
+            document.getElementById('selectOutputBtn').textContent = t.selectOutput;
+            document.getElementById('convertBtn').textContent = t.convert;
+            document.getElementById('langBtn').textContent = currentLang === 'en' ? '中文' : 'EN';
+        }
+
+        document.getElementById('langBtn').addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            updateUI();
+        });
+
+        updateUI();
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectOutputBtn = document.getElementById('selectOutputBtn');
+        const convertBtn = document.getElementById('convertBtn');
+        const fileNameDiv = document.getElementById('fileName');
+        const outputPathDiv = document.getElementById('outputPath');
+        const progressDiv = document.getElementById('progress');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusDiv = document.getElementById('status');
+
+        let pdfDoc = null;
+        let selectedFileName = '';
+        let outputPath = '';
+
+        fileInput.addEventListener('change', async () => {
+            if (fileInput.files[0]) {
+                await loadPdf(fileInput.files[0]);
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#764ba2';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#667eea';
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#667eea';
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.pdf')) {
+                await loadPdf(file);
+            } else {
+                statusDiv.textContent = i18n[currentLang].dropPdfOnly;
+            }
+        });
+
+        selectOutputBtn.addEventListener('click', async () => {
+            try {
+                const selected = await window.__TAURI__.core.invoke('plugin:dialog|open', {
+                    options: {
+                        directory: true,
+                        title: i18n[currentLang].selectOutput
+                    }
+                });
+                if (selected) {
+                    outputPath = selected;
+                    outputPathDiv.textContent = `${i18n[currentLang].output}: ${outputPath}`;
+                    statusDiv.textContent = '';
+                }
+            } catch (err) {
+                statusDiv.textContent = `${i18n[currentLang].error}: ${err}`;
+            }
+        });
+
+        async function loadPdf(file) {
+            statusDiv.textContent = i18n[currentLang].loadingPdf;
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                selectedFileName = file.name.replace('.pdf', '');
+                fileNameDiv.textContent = `${i18n[currentLang].selected}: ${file.name} (${pdfDoc.numPages} ${i18n[currentLang].pages})`;
+                convertBtn.disabled = false;
+                statusDiv.textContent = '';
+                progressDiv.textContent = '';
+                progressBar.style.display = 'none';
+            } catch (err) {
+                statusDiv.textContent = `${i18n[currentLang].error}: ${err}`;
+            }
+        }
+
+        convertBtn.addEventListener('click', async () => {
+            if (!pdfDoc) return;
+
+            if (!outputPath) {
+                statusDiv.textContent = i18n[currentLang].selectFolderFirst;
+                return;
+            }
+
+            convertBtn.disabled = true;
+            statusDiv.textContent = i18n[currentLang].converting;
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+
+            const scale = 2;
+            const totalPages = pdfDoc.numPages;
+
+            for (let i = 1; i <= totalPages; i++) {
+                progressDiv.textContent = `${i18n[currentLang].processing} ${i}/${totalPages}`;
+                progressFill.style.width = `${(i / totalPages) * 100}%`;
+
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+
+                await page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+
+                const dataUrl = canvas.toDataURL('image/png');
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                const bytes = Array.from(new Uint8Array(arrayBuffer));
+
+                const fileName = `${selectedFileName}_page${i}.png`;
+                const filePath = `${outputPath}/${fileName}`;
+
+                try {
+                    await window.__TAURI__.core.invoke('save_png', {
+                        path: filePath,
+                        data: bytes
+                    });
+                } catch (err) {
+                    statusDiv.textContent = `${i18n[currentLang].error}: ${err.message || String(err)}`;
+                    break;
+                }
+            }
+
+            progressFill.style.width = '100%';
+            statusDiv.textContent = `${i18n[currentLang].complete} ${totalPages} ${i18n[currentLang].pngSavedTo} ${outputPath}`;
+            convertBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+dist/js/
+windows-release/
+src-tauri/target/
+.omc/
+.claude/
+*.deb
+*.rpm

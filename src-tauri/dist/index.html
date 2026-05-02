@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to PNG Converter</title>
+    <script src="js/pdf.min.js"></script>
+    <style>
+        * { background: white !important; color: black !important; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; text-align: center; }
+        .drop-zone { border: 2px dashed #007bff; padding: 3rem; margin: 2rem 0; border-radius: 8px; background: #f0f8ff !important; }
+        button { background: #007bff !important; color: white !important; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-size: 1rem; margin: 0.5rem; }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
+        .progress { margin: 1rem 0; font-family: monospace; }
+        #status { color: #666; margin-top: 1rem; }
+        #fileName { margin: 1rem 0; font-weight: bold; }
+        #outputPath { color: green; margin: 0.5rem 0; font-size: 0.9rem; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>PDF to PNG Converter</h1>
+
+    <div class="drop-zone" id="dropZone">
+        <p>Drag & drop PDF file here</p>
+        <p>or</p>
+        <input type="file" id="fileInput" accept=".pdf">
+    </div>
+
+    <div id="fileName"></div>
+    <div id="outputPath"></div>
+    <button id="selectOutputBtn">Select Output Folder</button>
+    <button id="convertBtn" disabled>Convert All Pages to PNG</button>
+    <div id="progress"></div>
+    <div id="status"></div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectOutputBtn = document.getElementById('selectOutputBtn');
+        const convertBtn = document.getElementById('convertBtn');
+        const fileNameDiv = document.getElementById('fileName');
+        const outputPathDiv = document.getElementById('outputPath');
+        const progressDiv = document.getElementById('progress');
+        const statusDiv = document.getElementById('status');
+
+        let pdfDoc = null;
+        let selectedFileName = '';
+        let outputPath = '';
+
+        fileInput.addEventListener('change', async () => {
+            if (fileInput.files[0]) {
+                await loadPdf(fileInput.files[0]);
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#0056b3';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#007bff';
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#007bff';
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.pdf')) {
+                await loadPdf(file);
+            } else {
+                statusDiv.textContent = 'Please drop a PDF file';
+            }
+        });
+
+        selectOutputBtn.addEventListener('click', () => {
+            const path = prompt('Enter output folder path:', '/home/user/Downloads');
+            if (path) {
+                outputPath = path;
+                outputPathDiv.textContent = `Output: ${outputPath}`;
+                statusDiv.textContent = '';
+            }
+        });
+
+        async function loadPdf(file) {
+            statusDiv.textContent = 'Loading PDF...';
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                selectedFileName = file.name.replace('.pdf', '');
+                fileNameDiv.textContent = `Selected: ${file.name} (${pdfDoc.numPages} pages)`;
+                convertBtn.disabled = false;
+                statusDiv.textContent = '';
+                progressDiv.textContent = '';
+            } catch (err) {
+                statusDiv.textContent = `Error: ${err}`;
+            }
+        }
+
+        convertBtn.addEventListener('click', async () => {
+            if (!pdfDoc) return;
+
+            if (!outputPath) {
+                statusDiv.textContent = 'Please select output folder first';
+                return;
+            }
+
+            convertBtn.disabled = true;
+            statusDiv.textContent = 'Converting...';
+
+            const scale = 2;
+            const totalPages = pdfDoc.numPages;
+
+            for (let i = 1; i <= totalPages; i++) {
+                progressDiv.textContent = `Processing page ${i}/${totalPages}`;
+
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+
+                await page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `${outputPath}/${selectedFileName}_page${i}.png`;
+                link.href = dataUrl;
+                link.click();
+
+                progressDiv.textContent = `Page ${i}/${totalPages} saved`;
+            }
+
+            statusDiv.textContent = `Complete! ${totalPages} PNG files saved to ${outputPath}`;
+            convertBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>
