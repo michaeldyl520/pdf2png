@@ -6,6 +6,17 @@
     "core:default",
     "dialog:default",
     "fs:default",
-    "fs:write-all"
+    "fs:write-all",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "**"
+        }
+      ]
+    },
+    "opener:allow-reveal-item-in-dir",
+    "shell:default",
+    "shell:allow-open"
   ]
 }

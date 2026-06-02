@@ -1,315 +1,442 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF to PNG Converter</title>
+    <title>Tauri PDF Converter</title>
     <script src="js/pdf.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 2.5rem;
+        .drag-over {
+            background-color: rgba(173, 198, 255, 0.05) !important;
+            border-style: solid !important;
+            border-color: #adc6ff !important;
+            box-shadow: 0 0 15px rgba(173, 198, 255, 0.1);
         }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 0.5rem;
-            font-size: 2rem;
+        .active-glow {
+            box-shadow: 0 0 12px rgba(173, 198, 255, 0.2);
         }
-        #langSwitch {
-            text-align: center;
-            margin-bottom: 1.5rem;
+        ::-webkit-scrollbar {
+            width: 4px;
         }
-        #langBtn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2) !important;
-            color: white !important;
-            border: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: transform 0.2s;
+        ::-webkit-scrollbar-track {
+            background: #0b1326;
         }
-        #langBtn:hover { transform: scale(1.05); }
-        .drop-zone {
-            border: 3px dashed #667eea;
-            padding: 3rem;
-            margin: 2rem 0;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%);
-            text-align: center;
-            transition: all 0.3s;
+        ::-webkit-scrollbar-thumb {
+            background: #424754;
+            border-radius: 2px;
         }
-        .drop-zone:hover {
-            border-color: #764ba2;
-            background: linear-gradient(135deg, #f0f4ff 0%, #e0e8ff 100%);
-        }
-        .drop-zone p { color: #555; margin: 0.5rem 0; }
-        input[type="file"] {
-            margin-top: 1rem;
-            padding: 0.5rem;
-        }
-        .info { margin: 1.5rem 0; }
-        #fileName, #outputPath {
-            color: #444;
-            margin: 0.5rem 0;
-            font-size: 1.1rem;
-        }
-        #fileName { color: #667eea; font-weight: 600; }
-        #outputPath { color: #764ba2; word-break: break-all; }
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin: 1.5rem 0;
-        }
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2) !important;
-            color: white !important;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-        button:disabled {
-            background: #ccc !important;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        #progress {
-            color: #667eea;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin: 1rem 0;
-            min-height: 1.5rem;
-        }
-        #status {
-            color: #888;
-            margin-top: 1rem;
-            font-size: 0.95rem;
-        }
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            margin: 1rem 0;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s;
-            border-radius: 4px;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8c909f;
         }
     </style>
+    <script>
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "on-primary": "#002e6a",
+                "primary-container": "#4d8eff",
+                "outline": "#8c909f",
+                "surface-container": "#171f33",
+                "secondary-fixed-dim": "#c0c1ff",
+                "on-secondary-container": "#b0b2ff",
+                "secondary": "#c0c1ff",
+                "inverse-surface": "#dae2fd",
+                "secondary-container": "#3131c0",
+                "on-error": "#690005",
+                "error": "#ffb4ab",
+                "surface-bright": "#31394d",
+                "surface-dim": "#0b1326",
+                "outline-variant": "#424754",
+                "surface-tint": "#adc6ff",
+                "surface-container-highest": "#2d3449",
+                "tertiary-container": "#00a572",
+                "on-error-container": "#ffdad6",
+                "surface": "#0b1326",
+                "on-tertiary-fixed": "#002113",
+                "tertiary": "#4edea3",
+                "surface-container-low": "#131b2e",
+                "on-tertiary": "#003824",
+                "on-tertiary-container": "#00311f",
+                "on-secondary-fixed-variant": "#2f2ebe",
+                "on-primary-container": "#00285d",
+                "on-secondary-fixed": "#07006c",
+                "surface-variant": "#2d3449",
+                "surface-container-high": "#222a3d",
+                "primary": "#adc6ff",
+                "on-tertiary-fixed-variant": "#005236",
+                "on-primary-fixed": "#001a42",
+                "surface-container-lowest": "#060e20",
+                "on-primary-fixed-variant": "#004395",
+                "on-background": "#dae2fd",
+                "inverse-on-surface": "#283044",
+                "error-container": "#93000a",
+                "tertiary-fixed": "#6ffbbe",
+                "secondary-fixed": "#e1e0ff",
+                "primary-fixed-dim": "#adc6ff",
+                "on-secondary": "#1000a9",
+                "on-surface-variant": "#c2c6d6",
+                "background": "#0b1326",
+                "tertiary-fixed-dim": "#4edea3",
+                "on-surface": "#dae2fd",
+                "primary-fixed": "#d8e2ff",
+                "inverse-primary": "#005ac2"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+              },
+              "spacing": {
+                "stack-md": "12px",
+                "stack-lg": "24px",
+                "stack-sm": "4px",
+                "container-padding": "24px",
+                "gutter": "16px",
+                "base": "8px"
+              },
+              "fontFamily": {
+                "body-md": ["Inter"],
+                "headline-sm": ["Inter"],
+                "headline-lg": ["Inter"],
+                "body-lg": ["Inter"],
+                "label-md": ["Inter"],
+                "label-code": ["JetBrains Mono"],
+                "headline-md": ["Inter"]
+              },
+              "fontSize": {
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                "label-code": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
 </head>
-<body>
-    <div class="container">
-        <h1 id="title">PDF to PNG Converter</h1>
-        <div id="langSwitch">
-            <button id="langBtn">EN / 中文</button>
+<body class="bg-background text-on-surface font-body-md overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+    <!-- TopNavBar Shell -->
+    <header class="bg-surface-dim border-b border-outline-variant flex justify-between items-center w-full px-4 h-10 cursor-default select-none z-50">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary font-headline-sm text-headline-sm" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+            <span class="font-headline-sm text-headline-sm font-semibold text-on-surface" data-en="Tauri PDF Converter" data-zh="Tauri PDF 转换器">Tauri PDF 转换器</span>
+        </div>
+        <div class="flex items-center h-full">
+            <button class="flex items-center gap-1.5 px-3 py-1 rounded hover:bg-surface-container-highest transition-colors text-on-surface-variant group" id="lang-toggle" title="Switch Language / 切换语言">
+                <span class="material-symbols-outlined text-[18px]">language</span>
+                <span class="font-label-md text-label-md group-hover:text-on-surface" data-lang-label>English</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex flex-col h-[calc(100vh-48px)] items-center justify-center p-container-padding max-w-[800px] mx-auto">
+        <!-- App Title Area -->
+        <div class="text-center mb-stack-lg">
+            <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2" data-en="Convert to PNG" data-zh="转换为 PNG">转换为 PNG</h1>
+            <p class="font-body-md text-body-md text-on-surface-variant" data-en="Simple, fast, and local processing for your documents." data-zh="简单、快速、本地化处理您的文档。">简单、快速、本地化处理您的文档。</p>
         </div>
 
-        <div class="drop-zone" id="dropZone">
-            <p id="dropText">Drag & drop PDF file here</p>
-            <p id="orText">or</p>
-            <input type="file" id="fileInput" accept=".pdf">
-        </div>
+        <!-- Main Utility Container -->
+        <div class="w-full space-y-gutter">
+            <!-- Drag & Drop Zone -->
+            <div class="relative group border-2 border-dashed border-outline-variant rounded-xl p-12 flex flex-col items-center justify-center bg-surface-container-low transition-all duration-300 cursor-pointer" id="drop-zone">
+                <input accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="file-input" type="file"/>
+                <div class="contents pointer-events-none" id="empty-state">
+                    <div class="w-16 h-16 rounded-full bg-surface-container-highest flex items-center justify-center mb-4 text-primary group-hover:scale-110 transition-transform duration-300">
+                        <span class="material-symbols-outlined text-[32px]">upload_file</span>
+                    </div>
+                    <p class="font-headline-sm text-headline-sm text-on-surface mb-1" data-en="Select PDF" data-zh="选择 PDF 文件">选择 PDF 文件</p>
+                    <p class="font-body-md text-body-md text-on-surface-variant" data-en="or drag and drop here" data-zh="或拖放至此处">或拖放至此处</p>
+                </div>
+                <!-- File Selected State (Hidden by default) -->
+                <div class="hidden w-full max-w-md" id="file-state">
+                    <div class="bg-surface-container-high border border-outline-variant rounded p-4 flex items-center gap-4">
+                        <div class="bg-primary/10 p-2 rounded">
+                            <span class="material-symbols-outlined text-primary">description</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-body-md text-body-md text-on-surface truncate" id="file-name">document.pdf</p>
+                            <p class="font-label-code text-label-code text-on-surface-variant" id="file-size">0 MB</p>
+                        </div>
+                        <button class="p-1 hover:bg-surface-container-highest rounded text-on-surface-variant" id="remove-file">
+                            <span class="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-        <div class="info">
-            <div id="fileName"></div>
-            <div id="outputPath"></div>
-        </div>
+            <!-- Configuration & Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter items-center">
+                <!-- Info & Options -->
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <div class="relative flex items-center">
+                            <input checked class="peer h-5 w-5 rounded border-outline-variant bg-surface-container text-primary focus:ring-primary focus:ring-offset-background" type="checkbox" id="all-pages-checkbox"/>
+                        </div>
+                        <span class="font-body-md text-body-md text-on-surface" data-en="All pages supported" data-zh="支持所有页面">支持所有页面</span>
+                    </label>
+                    <div class="h-4 w-[1px] bg-outline-variant"></div>
+                    <span class="flex items-center gap-1 font-label-md text-label-md text-on-surface-variant">
+                        <span class="material-symbols-outlined text-[14px]">info</span>
+                        <span data-en="High Quality (300 DPI)" data-zh="高清晰度 (300 DPI)">高清晰度 (300 DPI)</span>
+                    </span>
+                </div>
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3">
+                    <button class="disabled:opacity-50 disabled:cursor-not-allowed bg-surface-container-high text-on-surface px-6 py-3 rounded font-headline-sm text-headline-sm hover:bg-surface-container-highest active:scale-[0.98] transition-all flex items-center gap-2" id="select-output-btn">
+                        <span class="material-symbols-outlined">folder_open</span>
+                        <span data-en="Select Folder" data-zh="选择文件夹">选择文件夹</span>
+                    </button>
+                    <button class="disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-on-primary px-10 py-3 rounded font-headline-sm text-headline-sm hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2" disabled id="convert-btn">
+                        <span class="material-symbols-outlined">sync</span>
+                        <span data-en="Convert" data-zh="开始转换">开始转换</span>
+                    </button>
+                </div>
+            </div>
 
-        <div class="btn-group">
-            <button id="selectOutputBtn">Select Output Folder</button>
-            <button id="convertBtn" disabled>Convert All Pages to PNG</button>
-        </div>
+            <!-- Output Path Display -->
+            <div class="hidden" id="output-path-container">
+                <div class="flex items-center gap-2 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[16px]">folder</span>
+                    <span class="font-label-code text-label-code truncate" id="output-path"></span>
+                </div>
+            </div>
 
-        <div class="progress-bar" id="progressBar" style="display:none;">
-            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            <!-- Progress Area (Hidden by default) -->
+            <div class="hidden pt-stack-md" id="progress-container">
+                <div class="flex justify-between items-end mb-2">
+                    <p class="font-label-md text-label-md text-primary" data-en="Processing pages..." data-zh="正在处理页面...">正在处理页面...</p>
+                    <p class="font-label-code text-label-code text-on-surface-variant" id="progress-percent">0%</p>
+                </div>
+                <div class="h-[6px] w-full bg-surface-container-highest rounded-full overflow-hidden">
+                    <div class="h-full bg-primary transition-all duration-300 ease-out" id="progress-bar" style="width: 0%;"></div>
+                </div>
+                <p class="font-label-md text-label-md text-on-surface-variant mt-2" id="progress-text"></p>
+            </div>
+
+            <!-- Success Area (Hidden by default) -->
+            <div class="hidden pt-stack-md flex items-center justify-between bg-tertiary/10 border border-tertiary/20 p-4 rounded" id="success-container">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    <div>
+                        <p class="font-body-md text-body-md text-on-surface" data-en="Conversion Complete" data-zh="转换完成">转换完成</p>
+                        <p class="font-label-md text-label-md text-on-surface-variant" id="success-path"></p>
+                    </div>
+                </div>
+                <button class="text-tertiary font-label-md text-label-md hover:underline" id="open-folder-btn" data-en="Open Folder" data-zh="打开文件夹">打开文件夹</button>
+            </div>
+
+            <!-- Error Area (Hidden by default) -->
+            <div class="hidden pt-stack-md flex items-center gap-3 bg-error/10 border border-error/20 p-4 rounded" id="error-container">
+                <span class="material-symbols-outlined text-error">error</span>
+                <p class="font-body-md text-body-md text-on-surface" id="error-text"></p>
+            </div>
         </div>
-        <div id="progress"></div>
-        <div id="status"></div>
-    </div>
+    </main>
+
+    <!-- Footer Shell -->
+    <footer class="bg-surface-container-lowest border-t border-outline-variant flex justify-between items-center w-full px-4 py-1 h-8 fixed bottom-0 left-0">
+        <span class="font-label-md text-label-md text-on-surface-variant" id="status-text" data-en="System Healthy • v1.0.4" data-zh="系统正常 • v1.0.4">系统正常 • v1.0.4</span>
+        <div class="flex gap-4">
+            <span class="font-label-md text-label-md text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-en="Docs" data-zh="文档">文档</span>
+            <span class="font-label-md text-label-md text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-en="Support" data-zh="支持">支持</span>
+        </div>
+    </footer>
 
     <script>
-        const i18n = {
-            en: {
-                title: 'PDF to PNG Converter',
-                dropText: 'Drag & drop PDF file here',
-                orText: 'or',
-                selectOutput: 'Select Output Folder',
-                convert: 'Convert All Pages to PNG',
-                loadingPdf: 'Loading PDF...',
-                selected: 'Selected',
-                pages: 'pages',
-                output: 'Output',
-                converting: 'Converting...',
-                processing: 'Processing page',
-                saved: 'saved',
-                complete: 'Complete!',
-                pngSavedTo: 'PNG files saved to',
-                selectFolderFirst: 'Please select output folder first',
-                dropPdfOnly: 'Please drop a PDF file',
-                error: 'Error'
-            },
-            zh: {
-                title: 'PDF 转 PNG 转换器',
-                dropText: '拖拽 PDF 文件到此处',
-                orText: '或',
-                selectOutput: '选择输出文件夹',
-                convert: '转换所有页面为 PNG',
-                loadingPdf: '正在加载 PDF...',
-                selected: '已选择',
-                pages: '页',
-                output: '输出',
-                converting: '转换中...',
-                processing: '正在处理第',
-                saved: '已保存',
-                complete: '完成！',
-                pngSavedTo: '个 PNG 文件已保存到',
-                selectFolderFirst: '请先选择输出文件夹',
-                dropPdfOnly: '请拖入 PDF 文件',
-                error: '错误'
-            }
-        };
-
-        let currentLang = navigator.language.startsWith('zh') ? 'zh' : 'en';
-
-        function updateUI() {
-            const t = i18n[currentLang];
-            document.getElementById('title').textContent = t.title;
-            document.getElementById('dropText').textContent = t.dropText;
-            document.getElementById('orText').textContent = t.orText;
-            document.getElementById('selectOutputBtn').textContent = t.selectOutput;
-            document.getElementById('convertBtn').textContent = t.convert;
-            document.getElementById('langBtn').textContent = currentLang === 'en' ? '中文' : 'EN';
-        }
-
-        document.getElementById('langBtn').addEventListener('click', () => {
-            currentLang = currentLang === 'en' ? 'zh' : 'en';
-            updateUI();
-        });
-
-        updateUI();
-
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
 
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const selectOutputBtn = document.getElementById('selectOutputBtn');
-        const convertBtn = document.getElementById('convertBtn');
-        const fileNameDiv = document.getElementById('fileName');
-        const outputPathDiv = document.getElementById('outputPath');
-        const progressDiv = document.getElementById('progress');
-        const progressBar = document.getElementById('progressBar');
-        const progressFill = document.getElementById('progressFill');
-        const statusDiv = document.getElementById('status');
+        // i18n data-attribute based system
+        let currentLang = navigator.language.startsWith('zh') ? 'zh' : 'en';
 
+        function updateLanguage() {
+            document.documentElement.lang = currentLang;
+            const elements = document.querySelectorAll('[data-en][data-zh]');
+            elements.forEach(el => {
+                el.textContent = el.getAttribute(`data-${currentLang}`);
+            });
+            // Update the toggle button label
+            const label = document.querySelector('[data-lang-label]');
+            if (label) {
+                label.textContent = currentLang === 'zh' ? 'English' : '中文';
+            }
+        }
+
+        document.getElementById('lang-toggle').addEventListener('click', () => {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            updateLanguage();
+        });
+
+        // Initialize language
+        updateLanguage();
+
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const emptyState = document.getElementById('empty-state');
+        const fileState = document.getElementById('file-state');
+        const fileNameEl = document.getElementById('file-name');
+        const fileSizeEl = document.getElementById('file-size');
+        const removeBtn = document.getElementById('remove-file');
+        const selectOutputBtn = document.getElementById('select-output-btn');
+        const convertBtn = document.getElementById('convert-btn');
+        const outputPathContainer = document.getElementById('output-path-container');
+        const outputPathEl = document.getElementById('output-path');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercent = document.getElementById('progress-percent');
+        const progressText = document.getElementById('progress-text');
+        const successContainer = document.getElementById('success-container');
+        const successPath = document.getElementById('success-path');
+        const openFolderBtn = document.getElementById('open-folder-btn');
+        const errorContainer = document.getElementById('error-container');
+        const errorText = document.getElementById('error-text');
+        const statusText = document.getElementById('status-text');
+
+        // State
         let pdfDoc = null;
         let selectedFileName = '';
-        let outputPath = '';
+        let outputPath = localStorage.getItem('pdf2png_outputPath') || '';
 
-        fileInput.addEventListener('change', async () => {
-            if (fileInput.files[0]) {
-                await loadPdf(fileInput.files[0]);
-            }
+        // Restore saved output path
+        if (outputPath) {
+            outputPathEl.textContent = outputPath;
+            outputPathContainer.classList.remove('hidden');
+        }
+
+        // Drag & Drop Handlers (on both dropZone and fileInput since input overlays the zone)
+        ['dragenter', 'dragover'].forEach(eventName => {
+            [dropZone, fileInput].forEach(el => {
+                el.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('drag-over');
+                }, false);
+            });
         });
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.style.borderColor = '#764ba2';
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.style.borderColor = '#667eea';
+        ['dragleave', 'drop'].forEach(eventName => {
+            [dropZone, fileInput].forEach(el => {
+                el.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drag-over');
+                }, false);
+            });
         });
 
         dropZone.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            dropZone.style.borderColor = '#667eea';
             const file = e.dataTransfer.files[0];
             if (file && file.name.endsWith('.pdf')) {
                 await loadPdf(file);
             } else {
-                statusDiv.textContent = i18n[currentLang].dropPdfOnly;
+                showError(currentLang === 'zh' ? '请拖入 PDF 文件' : 'Please drop a PDF file');
             }
         });
 
+        fileInput.addEventListener('drop', async (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.pdf')) {
+                await loadPdf(file);
+            } else {
+                showError(currentLang === 'zh' ? '请拖入 PDF 文件' : 'Please drop a PDF file');
+            }
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files[0]) {
+                await loadPdf(e.target.files[0]);
+            }
+        });
+
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetUI();
+        });
+
+        // Load PDF
+        async function loadPdf(file) {
+            hideError();
+            hideSuccess();
+            statusText.textContent = currentLang === 'zh' ? '正在加载 PDF...' : 'Loading PDF...';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                selectedFileName = file.name.replace('.pdf', '');
+
+                // Update UI
+                fileNameEl.textContent = file.name;
+                fileSizeEl.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+                emptyState.classList.add('hidden');
+                fileState.classList.remove('hidden');
+                fileInput.classList.add('hidden');
+                convertBtn.disabled = false;
+                convertBtn.classList.add('active-glow');
+
+                statusText.textContent = currentLang === 'zh'
+                    ? `已选择: ${pdfDoc.numPages} 页`
+                    : `Selected: ${pdfDoc.numPages} pages`;
+            } catch (err) {
+                showError(`${currentLang === 'zh' ? '错误' : 'Error'}: ${err.message || String(err)}`);
+            }
+        }
+
+        // Select Output Folder
         selectOutputBtn.addEventListener('click', async () => {
             try {
                 const selected = await window.__TAURI__.core.invoke('plugin:dialog|open', {
                     options: {
                         directory: true,
-                        title: i18n[currentLang].selectOutput
+                        title: currentLang === 'zh' ? '选择输出文件夹' : 'Select Output Folder'
                     }
                 });
                 if (selected) {
                     outputPath = selected;
-                    outputPathDiv.textContent = `${i18n[currentLang].output}: ${outputPath}`;
-                    statusDiv.textContent = '';
+                    outputPathEl.textContent = outputPath;
+                    outputPathContainer.classList.remove('hidden');
+                    localStorage.setItem('pdf2png_outputPath', outputPath);
                 }
             } catch (err) {
-                statusDiv.textContent = `${i18n[currentLang].error}: ${err}`;
+                showError(`${currentLang === 'zh' ? '错误' : 'Error'}: ${err}`);
             }
         });
 
-        async function loadPdf(file) {
-            statusDiv.textContent = i18n[currentLang].loadingPdf;
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                selectedFileName = file.name.replace('.pdf', '');
-                fileNameDiv.textContent = `${i18n[currentLang].selected}: ${file.name} (${pdfDoc.numPages} ${i18n[currentLang].pages})`;
-                convertBtn.disabled = false;
-                statusDiv.textContent = '';
-                progressDiv.textContent = '';
-                progressBar.style.display = 'none';
-            } catch (err) {
-                statusDiv.textContent = `${i18n[currentLang].error}: ${err}`;
-            }
-        }
-
+        // Convert
         convertBtn.addEventListener('click', async () => {
             if (!pdfDoc) return;
 
             if (!outputPath) {
-                statusDiv.textContent = i18n[currentLang].selectFolderFirst;
+                showError(currentLang === 'zh' ? '请先选择输出文件夹' : 'Please select output folder first');
                 return;
             }
 
             convertBtn.disabled = true;
-            statusDiv.textContent = i18n[currentLang].converting;
-            progressBar.style.display = 'block';
-            progressFill.style.width = '0%';
+            convertBtn.classList.remove('active-glow');
+            hideError();
+            hideSuccess();
+            progressContainer.classList.remove('hidden');
 
-            const scale = 2;
+            const scale = 2; // 300 DPI equivalent
             const totalPages = pdfDoc.numPages;
 
             for (let i = 1; i <= totalPages; i++) {
-                progressDiv.textContent = `${i18n[currentLang].processing} ${i}/${totalPages}`;
-                progressFill.style.width = `${(i / totalPages) * 100}%`;
+                const percent = Math.floor((i / totalPages) * 100);
+                progressBar.style.width = percent + '%';
+                progressPercent.textContent = percent + '%';
+                progressText.textContent = currentLang === 'zh'
+                    ? `正在处理第 ${i}/${totalPages} 页`
+                    : `Processing page ${i}/${totalPages}`;
 
                 const page = await pdfDoc.getPage(i);
                 const viewport = page.getViewport({ scale });
@@ -339,15 +466,65 @@
                         data: bytes
                     });
                 } catch (err) {
-                    statusDiv.textContent = `${i18n[currentLang].error}: ${err.message || String(err)}`;
-                    break;
+                    showError(`${currentLang === 'zh' ? '错误' : 'Error'}: ${err.message || String(err)}`);
+                    progressContainer.classList.add('hidden');
+                    convertBtn.disabled = false;
+                    return;
                 }
             }
 
-            progressFill.style.width = '100%';
-            statusDiv.textContent = `${i18n[currentLang].complete} ${totalPages} ${i18n[currentLang].pngSavedTo} ${outputPath}`;
+            // Success
+            progressBar.style.width = '100%';
+            progressPercent.textContent = '100%';
+            progressContainer.classList.add('hidden');
+            showSuccess(outputPath);
             convertBtn.disabled = false;
         });
+
+        // Open Folder
+        openFolderBtn.addEventListener('click', async () => {
+            if (outputPath) {
+                try {
+                    await window.__TAURI__.opener.openPath(outputPath);
+                } catch (e) {
+                    console.error('Open folder failed:', e);
+                }
+            }
+        });
+
+        // UI Helpers
+        function resetUI() {
+            fileInput.value = '';
+            pdfDoc = null;
+            selectedFileName = '';
+            emptyState.classList.remove('hidden');
+            fileState.classList.add('hidden');
+            fileInput.classList.remove('hidden');
+            convertBtn.disabled = true;
+            convertBtn.classList.remove('active-glow');
+            progressContainer.classList.add('hidden');
+            hideSuccess();
+            hideError();
+            statusText.textContent = currentLang === 'zh' ? '系统正常 • v1.0.4' : 'System Healthy • v1.0.4';
+        }
+
+        function showError(msg) {
+            errorText.textContent = msg;
+            errorContainer.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorContainer.classList.add('hidden');
+        }
+
+        function showSuccess(path) {
+            successPath.textContent = path;
+            successContainer.classList.remove('hidden');
+        }
+
+        function hideSuccess() {
+            successContainer.classList.add('hidden');
+        }
     </script>
 </body>
 </html>
