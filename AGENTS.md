@@ -45,10 +45,6 @@ cd src-tauri
 cargo build --release --target x86_64-pc-windows-gnu
 ```
 
-## Git Commit
-
-This project does NOT require JIRA prefix in commit messages. Use simple, descriptive commit messages.
-
 ## Release Process
 
 ### Version Update
